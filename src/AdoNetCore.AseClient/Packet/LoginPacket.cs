@@ -53,8 +53,9 @@ namespace AdoNetCore.AseClient.Packet
 
         private int TDS_MAXNAME = 30;
         private int TDS_PROGNLEN = 10;
-        private int TDS_RPLEN = 15 * 16 + 12 + 1;
+        private int TDS_RPLEN = 255;
         private int TDS_PKTLEN = 6;
+        private int TDS_NETBUF = 4;
 
         public BufferType Type => BufferType.TDS_BUF_LOGIN;
         public BufferStatus Status => BufferStatus.TDS_BUFSTAT_NONE;
@@ -62,60 +63,101 @@ namespace AdoNetCore.AseClient.Packet
         public void Write(Stream stream, DbEnvironment env)
         {
             Logger.Instance?.WriteLine($"Write {Type}");
-            stream.WritePaddedString(Hostname, TDS_MAXNAME, env.Encoding); //lhostname
-            stream.WritePaddedString(Username, TDS_MAXNAME, env.Encoding); //lussername
-            stream.WritePaddedString(Password, TDS_MAXNAME, env.Encoding); //lpw
-            stream.WritePaddedString(ProcessId, TDS_MAXNAME, env.Encoding); //lhostproc
+            //Host Name [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(Hostname, TDS_MAXNAME, env.Encoding);
+            //User Name [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(Username, TDS_MAXNAME, env.Encoding);
+            //Password [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(Password, TDS_MAXNAME, env.Encoding);
+            //Host Process [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(ProcessId, TDS_MAXNAME, env.Encoding);
+
+            //Byte Ordering - int2 [1]
+            stream.WriteByte((byte)LInt2);
+            //Byte Ordering - int4 [2]
+            stream.WriteByte((byte)LInt4);
+            //Character Encoding [1]
+            stream.WriteByte((byte)LChar);
+            //Float Format [1]
+            stream.WriteByte((byte)LFlt);
+            //Date Format [1]
+            stream.WriteByte((byte)LDt);
+            //lusedb [1]
+            stream.WriteByte((byte)LUseDb.TRUE);
+            //ldmpld [1]
+            stream.WriteByte((byte)LDmpLd.FALSE);
+            //linterfacespare [1]
+            stream.WriteByte((byte)LInterfaceSpare);
+            //Dialog Type [1]
+            stream.WriteByte((byte)LType);
 
             stream.Write(new byte[]
             {
-                (byte) LInt2,
-                (byte) LInt4,
-                (byte) LChar,
-                (byte) LFlt,
-                (byte) LDt,
-                (byte) LUseDb.TRUE, //lusedb
-                (byte) LDmpLd.FALSE, //ldmpld
-                (byte) LInterfaceSpare,
-                (byte) LType,
-                0, 0, 0, 0, //lbufsize
-                0, 0, 0, //lspare
+                //lbufsize [4] -- ribo claims this is [1], but that seems to break things
+                0, 0, 0, 0,
+                //lspare [3]
+                0, 0, 0,
             });
 
-            stream.WritePaddedString(ApplicationName, TDS_MAXNAME, env.Encoding); //lappname
-            stream.WritePaddedString(ServerName, TDS_MAXNAME, env.Encoding); //lservname
+            //Application Name [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(ApplicationName, TDS_MAXNAME, env.Encoding);
+            //Service Name [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(ServerName, TDS_MAXNAME, env.Encoding);
 
             //spec's a bit weird when it comes to this bit... following ADO.net driver
-            //lrempw, lrempwlen
-            stream.WriteWeirdPasswordString(Password, TDS_RPLEN, env.Encoding);
+            //Remote Passwords [255] + Length [1]
+            stream.WriteRemotePasswordString(Password, TDS_RPLEN, env.Encoding);
 
-            //ltds version
+            //TDS Version [4]
             stream.Write(new byte[] { 5, 0, 0, 0 });
-            stream.WritePaddedString(ClientLibrary, TDS_PROGNLEN, env.Encoding);
-            stream.Write(new byte[] { 0x0f, 0x07, 0x00, 0x0d }); //lprogvers //doesn't matter what this value is really
+            //Prog Name [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(ClientLibrary, TDS_PROGNLEN, env.Encoding);
+            //Prog Version [4] -- doesn't matter what this value is really
+            stream.Write(new byte[] { 0x0f, 0x07, 0x00, 0x0d });
 
-            stream.Write(new[]
-            {
-                (byte) LNoShort,
-                (byte) LFlt4,
-                (byte) LDate4
-            });
+            //Convert Shorts [1]
+            stream.WriteByte((byte)LNoShort);
+            //4-byte Float Format [1]
+            stream.WriteByte((byte)LFlt4);
+            //4-byte Date Format [1]
+            stream.WriteByte((byte)LDate4);
 
-            stream.WritePaddedString(Language, TDS_MAXNAME, env.Encoding);//llanguage
+            //Language [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(Language, TDS_MAXNAME, env.Encoding);//llanguage
+            
+            //Notify when Language Changed [1]
+            stream.WriteByte((byte)LSetLang);
 
+            //Old Secure Info [2]
+            stream.Write(new byte[] { 0, 0 });
+
+            //Secure Login Flags [1]
+            stream.WriteByte((byte)LSecLogin.TDS_SEC_LOG_NONE);
+
+            //Bulk Copy [1]
+            stream.WriteByte(0);
+
+            //HA Login Flags [1]
+            stream.WriteByte((byte)LHaLogin.TDS_HA_LOG_REDIRECT);
+
+            //HA Session ID [6]
+            stream.Write(new byte[] { 0, 0, 0, 0, 0, 0 });
+
+            //Spare [2]
+            stream.Write(new byte[] { 0, 0 });
+
+            //Character Set [30] + Length [1]
+            stream.WritePaddedLengthSuffixedString(Charset, TDS_MAXNAME, env.Encoding);
+            
+            //Notify when Character Set Changed [1]
+            stream.WriteByte((byte)LSetCharset);
+            
+            //Packet Size [6] + Length [1]
+            stream.WritePaddedLengthSuffixedString(PacketSize.ToString(), TDS_PKTLEN, env.Encoding);
+
+            //ldummy [4]
             stream.Write(new byte[]
             {
-                (byte)LSetLang,
-                0,0,0,0,8,0,0,0,0,0,0,0,0//loldsecure, lseclogin, lsecbulk, lhalogin, lhasessionid, lsecspare
-            });
-
-            stream.WritePaddedString(Charset, TDS_MAXNAME, env.Encoding); //lcharset
-            stream.WriteByte((byte)LSetCharset); //lsetcharset
-            stream.WritePaddedString(PacketSize.ToString(), TDS_PKTLEN, env.Encoding);//lpacketsize
-            //ldummy
-            stream.Write(new byte[]
-            {
-                //0xDE, 0xAD, 0xBE, 0xEF
                 0x00, 0x00, 0x00, 0x00
             });
 

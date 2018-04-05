@@ -92,12 +92,15 @@ namespace AdoNetCore.AseClient.Enum
 
     internal enum LSecLogin : byte
     {
+        TDS_SEC_LOG_NONE = (0x00), //added for our own use
         TDS_SEC_LOG_ENCRYPT = (0x01),
         TDS_SEC_LOG_CHALLENGE = (0x02),
         TDS_SEC_LOG_LABELS = (0x04),
         TDS_SEC_LOG_APPDEFINED = (0x08),
         TDS_SEC_LOG_SECSESS = (0x10),
-        TDS_SEC_LOG_ENCRYPT2 = (0x20)
+        TDS_SEC_LOG_ENCRYPT2 = (0x20),
+        TDS_SEC_LOG_UNKNOWN_FLAG = (0x40),
+        TDS_SEC_LOG_ENCRYPT3 = (0x80),
     }
 
     internal enum LSecBulk : byte
