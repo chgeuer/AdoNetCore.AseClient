@@ -11,13 +11,13 @@ namespace AdoNetCore.AseClient.Internal
         //Cache the current process details, expensive call
         private static readonly Process CurrentProcess = Process.GetCurrentProcess();
         private static readonly Regex DsUrlRegex = new Regex(
-            @"^file://(?<path>.+" + Regex.Escape(new string(new [] { Path.DirectorySeparatorChar })) + ")?(?<filename>[^" + Regex.Escape(new string(new[] { Path.DirectorySeparatorChar })) + "?]+)(?:[?](?<servicename>.+))?$", 
+            @"^file://(?<path>.+" + Regex.Escape(new string(new[] { Path.DirectorySeparatorChar })) + ")?(?<filename>[^" + Regex.Escape(new string(new[] { Path.DirectorySeparatorChar })) + "?]+)(?:[?](?<servicename>.+))?$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
         public static ConnectionParameters Parse(string connectionString)
         {
             var connectionStringTokeniser = new ConnectionStringTokeniser();
-            
+
             var result = new ConnectionParameters();
 
             string dsUrl = null;
@@ -146,6 +146,12 @@ namespace AdoNetCore.AseClient.Internal
                         result.UseAseDecimal = Convert.ToBoolean(item.PropertyValue);
                     }
                 }
+                else if (item.PropertyName.Equals("EncryptPassword", StringComparison.OrdinalIgnoreCase)
+                || item.PropertyName.Equals("EncryptPwd", StringComparison.OrdinalIgnoreCase)
+                || item.PropertyName.Equals("Encrypt Password", StringComparison.OrdinalIgnoreCase))
+                {
+                    result.EncryptPassword = Convert.ToInt32(item.PropertyValue) != 0;
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(dsUrl))
@@ -264,5 +270,6 @@ namespace AdoNetCore.AseClient.Internal
         public ushort PacketSize { get; private set; } = 512;
         public int TextSize { get; private set; } = 32768;
         public bool UseAseDecimal { get; private set; } = false;
+        public bool EncryptPassword { get; private set; } = false;
     }
 }

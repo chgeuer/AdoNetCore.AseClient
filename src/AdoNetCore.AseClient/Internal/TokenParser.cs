@@ -59,7 +59,8 @@ namespace AdoNetCore.AseClient.Internal
             {TokenType.TDS_PARAMFMT, ParameterFormatToken.Create },
             {TokenType.TDS_PARAMFMT2, ParameterFormat2Token.Create },
             {TokenType.TDS_PARAMS, ParametersToken.Create },
-            {TokenType.TDS_OPTIONCMD, OptionCommandToken.Create }
+            {TokenType.TDS_OPTIONCMD, OptionCommandToken.Create },
+            {TokenType.TDS_MSG, MessageToken.Create }
         };
     }
 }

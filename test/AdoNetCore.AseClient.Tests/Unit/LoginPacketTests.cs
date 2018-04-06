@@ -73,6 +73,7 @@ namespace AdoNetCore.AseClient.Tests.Unit
                     "iso_1",
                     "ADO.NET",
                     512,
+                    false,
                     new CapabilityToken()
                 ).Write(
                     ms,

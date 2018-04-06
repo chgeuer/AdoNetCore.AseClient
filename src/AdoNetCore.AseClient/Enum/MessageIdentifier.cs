@@ -2,7 +2,7 @@
 
 namespace AdoNetCore.AseClient.Enum
 {
-    internal enum MessageIdentifier : short
+    internal enum MessageIdentifier : ushort
     {
         /// <summary>
         /// Start encrypted login protocol.
@@ -64,6 +64,7 @@ namespace AdoNetCore.AseClient.Enum
         /// Return alternate encrypted passwords.
         /// </summary>
         TDS_MSG_SEC_LOGPWD2 = 15,
+        //there doesn't seem to be a TDS_MSG_SEC_REMPWD2 to go along with this
         /// <summary>
         /// Returns list of supported ciphers.
         /// </summary>
@@ -88,5 +89,13 @@ namespace AdoNetCore.AseClient.Enum
         /// Client sends to original server to indicate that the migration attempt failed. Optional parameter indicates failure reason.
         /// </summary>
         TDS_MSG_MIG_FAIL = 21,
+        /// <summary>
+        /// Send encrypted user password
+        /// </summary>
+        TDS_MSG_SEC_LOGPWD3 = 31,
+        /// <summary>
+        /// Send encrypted remote passwords
+        /// </summary>
+        TDS_MSG_SEC_REMPWD3 = 32
     }
 }

@@ -96,6 +96,16 @@ namespace AdoNetCore.AseClient.Internal
                     _inner.EnsureReceive(buffer, 0, env.HeaderSize);
                     var length = buffer[2] << 8 | buffer[3];
                     var bufferStatus = (BufferStatus)buffer[1];
+
+                    if (length > buffer.Length)
+                    {
+                        Logger.Instance?.WriteLine($"Server responded with unexpectedly large length {length} (expected: {buffer.Length}). Adjusting...");
+
+                        var newBuffer = new byte[length];
+                        Array.Copy(buffer, 0, newBuffer, 0, 8);
+                        buffer = newBuffer;
+                    }
+
                     _inner.EnsureReceive(buffer, env.HeaderSize, length - env.HeaderSize);
                     ms.Write(buffer, env.HeaderSize, length - env.HeaderSize);
 

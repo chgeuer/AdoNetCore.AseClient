@@ -66,6 +66,8 @@ namespace AdoNetCore.AseClient.Token
 
                 Formats = formats.ToArray();
             }
+
+            Logger.Instance?.WriteLine($"<- {Type}: {Formats.Length} parameters");
         }
     }
 }

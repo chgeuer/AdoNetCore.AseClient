@@ -17,6 +17,7 @@ namespace AdoNetCore.AseClient.Packet
         public string Language { get; set; }
         public string Charset { get; set; }
         public string ClientLibrary { get; set; }
+        public bool EncryptPassword { get; set; }
 
         public CapabilityToken Capability { get; set; }
 
@@ -36,7 +37,7 @@ namespace AdoNetCore.AseClient.Packet
 
         public int PacketSize { get; set; }
 
-        public LoginPacket(string hostname, string username, string password, string processId, string applicationName, string serverName, string language, string charset, string clientLibrary, int packetSize, CapabilityToken capability)
+        public LoginPacket(string hostname, string username, string password, string processId, string applicationName, string serverName, string language, string charset, string clientLibrary, int packetSize, bool encryptPassword, CapabilityToken capability)
         {
             Capability = capability;
             Hostname = hostname ?? string.Empty;
@@ -49,6 +50,7 @@ namespace AdoNetCore.AseClient.Packet
             Charset = charset ?? string.Empty;
             ClientLibrary = clientLibrary ?? string.Empty;
             PacketSize = packetSize;
+            EncryptPassword = encryptPassword;
         }
 
         // ReSharper disable InconsistentNaming
@@ -72,7 +74,7 @@ namespace AdoNetCore.AseClient.Packet
             //User Name [30] + Length [1]
             stream.WritePaddedLengthSuffixedString(Username, TDS_MAXNAME, env.Encoding);
             //Password [30] + Length [1]
-            stream.WritePaddedLengthSuffixedString(Password, TDS_MAXNAME, env.Encoding);
+            stream.WritePaddedLengthSuffixedString(EncryptPassword ? string.Empty : Password, TDS_MAXNAME, env.Encoding);
             //Host Process [30] + Length [1]
             stream.WritePaddedLengthSuffixedString(ProcessId, TDS_MAXNAME, env.Encoding);
 
@@ -107,8 +109,10 @@ namespace AdoNetCore.AseClient.Packet
             stream.WritePaddedLengthSuffixedString(ServerName, TDS_MAXNAME, env.Encoding);
 
             //spec's a bit weird when it comes to this bit... following ADO.net driver
+            //ok.. more reading in the spec reveals that it's an array of length-prefixed server-name:password pairs, with a total allowed size of 255, and suffixed with the total number of bytes consumed.
+            //hence: [server-name-length][server-name][pw-length][pw][2+pw-length], with empty server-name results in [0][nothing][x][y][2+x]
             //Remote Passwords [255] + Length [1]
-            stream.WriteRemotePasswordString(Password, TDS_RPLEN, env.Encoding);
+            stream.WriteRemotePasswordString(EncryptPassword ? string.Empty : Password, TDS_RPLEN, env.Encoding);
 
             //TDS Version [4]
             stream.Write(new byte[] { 5, 0, 0, 0 });
@@ -134,7 +138,14 @@ namespace AdoNetCore.AseClient.Packet
             stream.WriteRepeatedBytes(0, TDS_OLDSECURE);
 
             //Secure Login Flags [1]
-            stream.WriteByte((byte)LSecLogin.TDS_SEC_LOG_NONE);
+            if (EncryptPassword)
+            {
+                stream.WriteByte((byte) LSecLogin.TDS_SEC_LOG_ENCRYPT | (byte) LSecLogin.TDS_SEC_LOG_ENCRYPT2 | (byte) LSecLogin.TDS_SEC_LOG_ENCRYPT3);
+            }
+            else
+            {
+                stream.WriteByte((byte) LSecLogin.TDS_SEC_LOG_NONE);
+            }
 
             //Bulk Copy [1]
             stream.WriteByte(0);

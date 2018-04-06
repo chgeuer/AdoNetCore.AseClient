@@ -88,5 +88,15 @@ namespace AdoNetCore.AseClient.Tests.Integration
             yield return new TestCaseData(100, 1000, ConnectionStrings.Pooled100);
             yield return new TestCaseData(100, 10000, ConnectionStrings.Pooled100);
         }
+
+        [Test]
+        public void Login_EncryptPassword_Success()
+        {
+            Logger.Enable();
+            using (var connection = new AseConnection(ConnectionStrings.EncryptPassword))
+            {
+                connection.Open();
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ namespace AdoNetCore.AseClient.Tests
         public static string AseDecimalOn =>  $"{Prefix}; Pooling=false; LoginTimeOut=1; UseAseDecimal=1;";
         public static string DefaultUnique => $"{Default}; UniqueID={{{Guid.NewGuid()}}}";
         public static string PooledUnique =>  $"{Pooled}; UniqueID={{{Guid.NewGuid()}}}";
+        public static string EncryptPassword => $"{Prefix}; EncryptPassword=1;";
         public static string BadPass =>       $"Data Source={Server}; Port={Port}; Uid={User}; Pwd=XXXXXXXX; db={Database};";
 
         private static IDictionary<string, string> _loginDetails;

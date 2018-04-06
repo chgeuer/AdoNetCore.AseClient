@@ -15,12 +15,27 @@ namespace AdoNetCore.AseClient.Token
 
         public void Write(Stream stream, DbEnvironment env)
         {
-            throw new NotImplementedException();
+            stream.WriteByte(3);
+            stream.WriteByte((byte)Status);
+            stream.WriteUShort((ushort)MessageId);
         }
 
         public void Read(Stream stream, DbEnvironment env, IFormatToken previousFormatToken)
         {
-            throw new NotImplementedException();
+            var remainingLength = stream.ReadByte();
+            using (var ts = new ReadablePartialStream(stream, remainingLength))
+            {
+                Status = (MessageStatus) ts.ReadByte();
+                MessageId = (MessageIdentifier) ts.ReadUShort();
+            }
+            Logger.Instance?.WriteLine($"<- {Type}: {Status}, {MessageId}");
+        }
+
+        public static MessageToken Create(Stream stream, DbEnvironment env, IFormatToken previous)
+        {
+            var t = new MessageToken();
+            t.Read(stream, env, previous);
+            return t;
         }
     }
 }

@@ -86,7 +86,11 @@ namespace AdoNetCore.AseClient.Internal
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            //Debug.Assert(_position == Length, "Readable Partial Stream was not fully consumed");
+            if (_position != Length)
+            {
+                Logger.Instance?.WriteLine($"!!!Readable Partial Stream was not fully consumed. {Length - _position} bytes remain.");
+            }
+
             while (_position < _length)
             {
                 ReadByte();

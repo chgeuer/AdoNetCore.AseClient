@@ -138,7 +138,34 @@ namespace AdoNetCore.AseClient.Internal
                     _parameters.Charset,
                     "ADO.NET",
                     _environment.PacketSize,
+                    _parameters.EncryptPassword,
                     new CapabilityToken()));
+
+            if (_parameters.EncryptPassword)
+            {
+                var pwAckHandler = new LoginTokenHandler();
+                var pwMessageHandler = new MessageTokenHandler();
+
+                ReceiveTokens(
+                    pwAckHandler,
+                    new EnvChangeTokenHandler(_environment),
+                    pwMessageHandler);
+
+                SendPacket(new NormalPacket(
+                    new MessageToken
+                    {
+                        Status = MessageStatus.TDS_MSG_HASARGS,
+                        MessageId = MessageIdentifier.TDS_MSG_SEC_LOGPWD2
+                    },
+                    new ParameterFormatToken(), //TDS_VARBINARY
+                    new ParameterFormatToken(), //TDS_VARCHAR
+                    new ParameterFormatToken(), //TDS_VARBINARY
+                    new ParametersToken(), //encrypted password
+                    new ParametersToken(), //server name
+                    new ParametersToken(), //encrypted server password
+                    new DoneToken()
+                    ));
+            }
 
             var ackHandler = new LoginTokenHandler();
             var messageHandler = new MessageTokenHandler();
