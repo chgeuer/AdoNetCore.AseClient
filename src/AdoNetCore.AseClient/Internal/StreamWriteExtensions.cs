@@ -26,7 +26,7 @@ namespace AdoNetCore.AseClient.Internal
             stream.Write(BitConverter.GetBytes(value));
         }
 
-        private static void WriteRepeatedBytes(this Stream stream, byte value, int repeat)
+        public static void WriteRepeatedBytes(this Stream stream, byte value, int repeat)
         {
             for (var i = 0; i < repeat; i++)
             {

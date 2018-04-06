@@ -87,6 +87,42 @@ namespace AdoNetCore.AseClient.Internal
             }
         }
 
+        /*
+         * EncryptPassword=0 flow
+         * BUF_LOGIN        ->
+         *  CAPABILITY
+         *                  <- BUF_RESPONSE
+         *                      ENVCHANGE (charset, db, lang, packetsize)
+         *                      LOGINACK (LOG_SUCCEED)
+         *                      CAPABILITY
+         *                      DONE
+         */
+
+        /*
+         * EncryptPassword=1 flow
+         * BUF_LOGIN        ->
+         *  CAPABILITY
+         *                  <- BUF_RESPONSE
+         *                      LOGINACK (LOG_NEGOTIATE)
+         *                      MSG (MSG_HASARGS, MSG_SEC_ENCRYPT3)
+         *                      PARAMFMT (INT4, LONGBINARY, LONGBINARY)
+         *                      PARAMS (1, many bytes, not as many bytes) -- presumably this is asymmetric key info
+         *                      DONE
+         * let X = encrypted password bytes
+         * BUF_NORMAL       ->
+         *  MSG (MSG_HASARGS, MSG_SEC_LOGPWD3)
+         *  PARAMFMT (LONGBINARY)
+         *  PARAMS (X) -- encrypted password
+         *  MSG (MSG_HASARGS, MSG_SEC_REMPWD3)
+         *  PARAMFMT (VARCHAR, LONGBINARY)
+         *  PARAMS (null string?, X)
+         *                  <- BUF_RESPONSE
+         *                      ENVCHANGE (charset, db, lang, packetsize)
+         *                      LOGINACK (LOG_SUCCEED)
+         *                      CAPABILITY
+         *                      DONE
+         */
+
         public void Login()
         {
             //socket is established already

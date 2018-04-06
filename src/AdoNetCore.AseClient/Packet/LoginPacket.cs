@@ -51,11 +51,15 @@ namespace AdoNetCore.AseClient.Packet
             PacketSize = packetSize;
         }
 
-        private int TDS_MAXNAME = 30;
-        private int TDS_PROGNLEN = 10;
-        private int TDS_RPLEN = 255;
-        private int TDS_PKTLEN = 6;
-        private int TDS_NETBUF = 4;
+        // ReSharper disable InconsistentNaming
+        private const int TDS_MAXNAME = 30;
+        private const int TDS_PROGNLEN = 10;
+        private const int TDS_RPLEN = 255;
+        private const int TDS_PKTLEN = 6;
+        private const int TDS_NETBUF = 4;
+        private const int TDS_HA = 6;
+        private const int TDS_OLDSECURE = 2;
+        // ReSharper restore InconsistentNaming
 
         public BufferType Type => BufferType.TDS_BUF_LOGIN;
         public BufferStatus Status => BufferStatus.TDS_BUFSTAT_NONE;
@@ -91,14 +95,12 @@ namespace AdoNetCore.AseClient.Packet
             //Dialog Type [1]
             stream.WriteByte((byte)LType);
 
-            stream.Write(new byte[]
-            {
-                //lbufsize [4] -- ribo claims this is [1], but that seems to break things
-                0, 0, 0, 0,
-                //lspare [3]
-                0, 0, 0,
-            });
+            //lbufsize [4] -- ribo claims this is [1], but that seems to break things
+            stream.WriteRepeatedBytes(0, TDS_NETBUF);
 
+            //lspare [3]
+            stream.WriteRepeatedBytes(0, 3);
+            
             //Application Name [30] + Length [1]
             stream.WritePaddedLengthSuffixedString(ApplicationName, TDS_MAXNAME, env.Encoding);
             //Service Name [30] + Length [1]
@@ -129,7 +131,7 @@ namespace AdoNetCore.AseClient.Packet
             stream.WriteByte((byte)LSetLang);
 
             //Old Secure Info [2]
-            stream.Write(new byte[] { 0, 0 });
+            stream.WriteRepeatedBytes(0, TDS_OLDSECURE);
 
             //Secure Login Flags [1]
             stream.WriteByte((byte)LSecLogin.TDS_SEC_LOG_NONE);
@@ -141,10 +143,10 @@ namespace AdoNetCore.AseClient.Packet
             stream.WriteByte((byte)LHaLogin.TDS_HA_LOG_REDIRECT);
 
             //HA Session ID [6]
-            stream.Write(new byte[] { 0, 0, 0, 0, 0, 0 });
+            stream.WriteRepeatedBytes(0, TDS_HA);
 
             //Spare [2]
-            stream.Write(new byte[] { 0, 0 });
+            stream.WriteRepeatedBytes(0, 2);
 
             //Character Set [30] + Length [1]
             stream.WritePaddedLengthSuffixedString(Charset, TDS_MAXNAME, env.Encoding);
@@ -156,10 +158,7 @@ namespace AdoNetCore.AseClient.Packet
             stream.WritePaddedLengthSuffixedString(PacketSize.ToString(), TDS_PKTLEN, env.Encoding);
 
             //ldummy [4]
-            stream.Write(new byte[]
-            {
-                0x00, 0x00, 0x00, 0x00
-            });
+            stream.WriteRepeatedBytes(0, 4);
 
             Capability.Write(stream, env);
         }
