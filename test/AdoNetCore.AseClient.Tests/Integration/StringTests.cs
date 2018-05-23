@@ -17,6 +17,24 @@ namespace AdoNetCore.AseClient.Tests.Integration
             return new AseConnection(ConnectionStrings.Pooled);
         }
 
+        [SetUp]
+        public void Setup()
+        {
+            using (var connection = GetConnection())
+            {
+                connection.Execute("create table [dbo].[nchar_test_table] (value nchar(10))");
+            }
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            using (var connection = GetConnection())
+            {
+                connection.Execute("drop table [dbo].[nchar_test_table]");
+            }
+        }
+
         [Test]
         public void CharEncoding_ShouldWork()
         {
@@ -151,8 +169,8 @@ namespace AdoNetCore.AseClient.Tests.Integration
             }
         }
 
-        [TestCaseSource(nameof(SelectNCharParam_Cases))]
-        public void SelectNCharParam(string _, char input, char expected)
+        [TestCaseSource(nameof(SelectNChar_SingleChar_Param_Cases))]
+        public void SelectNChar_SingleChar_Param(string _, char input, char expected)
         {
             using (var connection = GetConnection())
             {
@@ -163,7 +181,7 @@ namespace AdoNetCore.AseClient.Tests.Integration
             }
         }
 
-        public static IEnumerable<TestCaseData> SelectNCharParam_Cases()
+        public static IEnumerable<TestCaseData> SelectNChar_SingleChar_Param_Cases()
         {
             yield return new TestCaseData("space", ' ', ' ');
             yield return new TestCaseData("\\x09", '\x09', '\x09');
@@ -186,6 +204,45 @@ namespace AdoNetCore.AseClient.Tests.Integration
             yield return new TestCaseData("u 200A", '\u200A', '\u200A');
             yield return new TestCaseData("u 3000", '\u3000', '\u3000');
             yield return new TestCaseData("\\0", '\0', ' ');
+        }
+
+        [TestCaseSource(nameof(SelectNChar_String_Param_Cases))]
+        public void SelectNChar_String_Param(string _, string input, string expected)
+        {
+            using (var connection = GetConnection())
+            {
+                var p = new DynamicParameters();
+                p.Add("@input", input, DbType.String);
+                var result = connection.QuerySingle<string>("select @input", p);
+                Assert.AreEqual(expected, result);
+            }
+        }
+
+        public static IEnumerable<TestCaseData> SelectNChar_String_Param_Cases()
+        {
+            yield return new TestCaseData("space", "test ", "test ");
+            yield return new TestCaseData("\test\x09", "test\x09", "test\x09");
+            yield return new TestCaseData("\test\x0A", "test\x0A", "test\x0A");
+            yield return new TestCaseData("\test\x0B", "test\x0B", "test\x0B");
+            yield return new TestCaseData("\test\x0C", "test\x0C", "test\x0C");
+            yield return new TestCaseData("\test\x0D", "test\x0D", "test\x0D");
+            yield return new TestCaseData("\test\xA0", "test\xA0", "test\xA0");
+            yield return new TestCaseData("u 2000", "test\u2000", "test\u2002");
+            yield return new TestCaseData("u 2000", "test\u2000", "test\u2002");
+            yield return new TestCaseData("u 2001", "test\u2001", "test\u2003");
+            yield return new TestCaseData("u 2002", "test\u2002", "test\u2002");
+            yield return new TestCaseData("u 2003", "test\u2003", "test\u2003");
+            yield return new TestCaseData("u 2004", "test\u2004", "test\u2004");
+            yield return new TestCaseData("u 2005", "test\u2005", "test\u2005");
+            yield return new TestCaseData("u 2006", "test\u2006", "test\u2006");
+            yield return new TestCaseData("u 2007", "test\u2007", "test\u2007");
+            yield return new TestCaseData("u 2008", "test\u2008", "test\u2008");
+            yield return new TestCaseData("u 2009", "test\u2009", "test\u2009");
+            yield return new TestCaseData("u 200A", "test\u200A", "test\u200A");
+            yield return new TestCaseData("u 3000", "test\u3000", "test\u3000");
+            yield return new TestCaseData("\\0 end", "test\0", "test");
+            yield return new TestCaseData("\\0 start", "\0test", " ");
+            yield return new TestCaseData("\\0 mid", "te\0st", "te");
         }
     }
 }
