@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using AdoNetCore.AseClient.Internal;
 using Dapper;
@@ -148,6 +149,43 @@ namespace AdoNetCore.AseClient.Tests.Integration
                     Assert.AreEqual(expected ?? DBNull.Value, result);
                 }
             }
+        }
+
+        [TestCaseSource(nameof(SelectNCharParam_Cases))]
+        public void SelectNCharParam(string _, char input, char expected)
+        {
+            using (var connection = GetConnection())
+            {
+                var p = new DynamicParameters();
+                p.Add("@input", input, DbType.String);
+                var result = connection.QuerySingle<char>("select @input", p);
+                Assert.AreEqual(expected, result, $"Expected: '{expected}' ({(int)expected}); Result: '{result}' ({(int)result})");
+            }
+        }
+
+        public static IEnumerable<TestCaseData> SelectNCharParam_Cases()
+        {
+            yield return new TestCaseData("space", ' ', ' ');
+            yield return new TestCaseData("\\x09", '\x09', '\x09');
+            yield return new TestCaseData("\\x0A", '\x0A', '\x0A');
+            yield return new TestCaseData("\\x0B", '\x0B', '\x0B');
+            yield return new TestCaseData("\\x0C", '\x0C', '\x0C');
+            yield return new TestCaseData("\\x0D", '\x0D', '\x0D');
+            yield return new TestCaseData("\\xA0", '\xA0', '\xA0');
+            yield return new TestCaseData("u 2000", '\u2000', '\u2002');
+            yield return new TestCaseData("u 2000", '\u2000', '\u2002');
+            yield return new TestCaseData("u 2001", '\u2001', '\u2003');
+            yield return new TestCaseData("u 2002", '\u2002', '\u2002');
+            yield return new TestCaseData("u 2003", '\u2003', '\u2003');
+            yield return new TestCaseData("u 2004", '\u2004', '\u2004');
+            yield return new TestCaseData("u 2005", '\u2005', '\u2005');
+            yield return new TestCaseData("u 2006", '\u2006', '\u2006');
+            yield return new TestCaseData("u 2007", '\u2007', '\u2007');
+            yield return new TestCaseData("u 2008", '\u2008', '\u2008');
+            yield return new TestCaseData("u 2009", '\u2009', '\u2009');
+            yield return new TestCaseData("u 200A", '\u200A', '\u200A');
+            yield return new TestCaseData("u 3000", '\u3000', '\u3000');
+            yield return new TestCaseData("\\0", '\0', ' ');
         }
     }
 }
