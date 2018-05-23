@@ -6,6 +6,9 @@ using NUnit.Framework;
 
 namespace AdoNetCore.AseClient.Tests.Integration
 {
+    /// <summary>
+    /// NOTE: these tests rely on the server encoding (UTF-8). Behaviour is consistent when run against the reference driver.
+    /// </summary>
     [TestFixture]
     [Category("basic")]
     public class StringTests
@@ -21,7 +24,7 @@ namespace AdoNetCore.AseClient.Tests.Integration
         {
             using (var connection = GetConnection())
             {
-                var result = connection.ExecuteScalar<string>("select convert(char(2), 'Àa')");
+                var result = connection.ExecuteScalar<string>("select convert(char(3), 'Àa')");
                 Assert.AreEqual("Àa", result);
             }
         }
@@ -31,7 +34,7 @@ namespace AdoNetCore.AseClient.Tests.Integration
         {
             using (var connection = GetConnection())
             {
-                var result = connection.ExecuteScalar<string>("select convert(varchar(2), 'Àa')");
+                var result = connection.ExecuteScalar<string>("select convert(varchar(10), 'Àa')");
                 Assert.AreEqual("Àa", result);
             }
         }
@@ -41,7 +44,7 @@ namespace AdoNetCore.AseClient.Tests.Integration
         {
             using (var connection = GetConnection())
             {
-                var result = connection.ExecuteScalar<string>("select convert(nchar(2), 'Àa')");
+                var result = connection.ExecuteScalar<string>("select convert(nchar(1), 'Àa')");
                 Assert.AreEqual("Àa", result);
             }
         }
@@ -51,7 +54,7 @@ namespace AdoNetCore.AseClient.Tests.Integration
         {
             using (var connection = GetConnection())
             {
-                var result = connection.ExecuteScalar<string>("select convert(nvarchar(2), 'Àa')");
+                var result = connection.ExecuteScalar<string>("select convert(nvarchar(10), 'Àa')");
                 Assert.AreEqual("Àa", result);
             }
         }
@@ -123,7 +126,7 @@ namespace AdoNetCore.AseClient.Tests.Integration
         [TestCase("select ''", " ")]
         [TestCase("select convert(char, '')", "                              ")]
         [TestCase("select convert(char(1), '')", " ")]
-        [TestCase("select convert(nchar(1), '')", " ")]
+        [TestCase("select convert(nchar(1), '')", "   ")]
         [TestCase("select convert(unichar(1), '')", " ")]
         [TestCase("select convert(varchar(1), '')", " ")]
         [TestCase("select convert(univarchar(1), '')", " ")]

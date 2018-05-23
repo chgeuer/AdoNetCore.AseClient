@@ -6,9 +6,12 @@ using NUnit.Framework;
 
 namespace AdoNetCore.AseClient.Tests.Integration
 {
+    /// <summary>
+    /// NOTE: these tests rely on the server encoding (UTF-8). Behaviour is consistent when run against the reference driver.
+    /// </summary>
     [TestFixture]
     [Category("basic")]
-    public class Utf8stringTests
+    public class UnicodeStringTests
     {
         private IDbConnection GetConnection()
         {
