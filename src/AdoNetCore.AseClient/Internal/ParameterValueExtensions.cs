@@ -30,12 +30,9 @@ namespace AdoNetCore.AseClient.Internal
         private static string HandleTerminator(this string value)
         {
             var iTerminator = value.IndexOf('\0');
-            if (iTerminator < 0)
-            {
-                return value;
-            }
-
-            return value.Substring(0, iTerminator);
+            return iTerminator < 0
+                ? value
+                : value.Substring(0, iTerminator);
         }
 
         private static string HandleEmpty(this string value)
