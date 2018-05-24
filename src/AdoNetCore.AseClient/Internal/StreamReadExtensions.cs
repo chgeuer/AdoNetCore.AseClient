@@ -159,14 +159,11 @@ namespace AdoNetCore.AseClient.Internal
             return buf;
         }
 
-        private static readonly double SqlTicksPerMillisecond = 0.3;
-        private static readonly DateTime SqlDateTimeEpoch = new DateTime(1900, 1, 1);
-
         public static DateTime ReadIntPartDateTime(this Stream stream)
         {
             var days = stream.ReadInt();
             var sqlTicks = stream.ReadInt();
-            return SqlDateTimeEpoch.AddDays(days).AddMilliseconds(sqlTicks / SqlTicksPerMillisecond);
+            return Constants.Sql.Epoch.AddDays(days).AddMilliseconds((int)(sqlTicks / Constants.Sql.TicksPerMillisecond));
         }
 
         public static DateTime ReadShortPartDateTime(this Stream stream)
@@ -174,19 +171,19 @@ namespace AdoNetCore.AseClient.Internal
             var p1 = stream.ReadUShort();
             var p2 = stream.ReadUShort();
 
-            return SqlDateTimeEpoch.AddDays(p1).AddMinutes(p2);
+            return Constants.Sql.Epoch.AddDays(p1).AddMinutes(p2);
         }
 
         public static DateTime ReadDate(this Stream stream)
         {
             var p1 = stream.ReadInt();
-            return SqlDateTimeEpoch.AddDays(p1);
+            return Constants.Sql.Epoch.AddDays(p1);
         }
 
         public static DateTime ReadTime(this Stream stream)
         {
             var sqlTicks = stream.ReadInt();
-            return SqlDateTimeEpoch.AddMilliseconds(sqlTicks / SqlTicksPerMillisecond);
+            return Constants.Sql.Epoch.AddMilliseconds((int)(sqlTicks / Constants.Sql.TicksPerMillisecond));
         }
 
         public static AseDecimal? ReadAseDecimal(this Stream stream, byte precision, byte scale)
