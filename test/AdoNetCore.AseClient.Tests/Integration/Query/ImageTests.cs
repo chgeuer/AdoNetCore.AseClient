@@ -14,7 +14,7 @@ namespace AdoNetCore.AseClient.Tests.Integration.Query
         private IDbConnection GetConnection()
         {
             Logger.Enable();
-            return new AseConnection(ConnectionStrings.Pooled);
+            return new AseConnection(ConnectionStrings.PooledUtf8);
         }
 
         [TestCaseSource(nameof(SelectLiteral_Cases))]

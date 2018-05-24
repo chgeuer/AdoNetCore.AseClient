@@ -1,20 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using AdoNetCore.AseClient.Internal;
+using System.Data.Common;
+using AdoNetCore.AseClient.Tests.ConnectionProvider;
 using Dapper;
 using NUnit.Framework;
 
 namespace AdoNetCore.AseClient.Tests.Integration.Query
 {
-    [TestFixture]
     [Category("basic")]
-    public class TimeTests
+#if NET_FRAMEWORK
+    [TestFixture(typeof(SapConnectionProvider))]
+#endif
+    [TestFixture(typeof(CoreFxConnectionProvider))]
+    public class TimeTests<T> where T : IConnectionProvider
     {
-        private IDbConnection GetConnection()
+        private DbConnection GetConnection()
         {
-            Logger.Enable();
-            return new AseConnection(ConnectionStrings.Pooled);
+            return Activator.CreateInstance<T>().GetConnection(ConnectionStrings.PooledUtf8);
         }
 
         [TestCaseSource(nameof(SelectLiteral_Cases))]
@@ -45,10 +48,8 @@ namespace AdoNetCore.AseClient.Tests.Integration.Query
             yield return new TestCaseData("select convert(time, null)", null);
             yield return new TestCaseData("select convert(time, '12:12:12')", new DateTime(1900, 01, 01, 12, 12, 12));
             yield return new TestCaseData("select convert(time, '00:00:00')", new DateTime(1900, 01, 01, 0, 0, 0, 0));
-            yield return new TestCaseData("select convert(time, '23:59:59.997')", new DateTime(1900, 01, 01, 23, 59, 59, 997));
+            yield return new TestCaseData("select convert(time, '23:59:59.997')", new DateTime(1900, 01, 01, 23, 59, 59, 996));
         }
-
-        
 
         [Test]
         public void SelectLiteral_ExecuteDataReader()
@@ -63,7 +64,11 @@ namespace AdoNetCore.AseClient.Tests.Integration.Query
                     reader.Read();
 
                     Assert.AreEqual(new DateTime(1900, 01, 01, 12, 12, 12), reader.GetDateTime(0));
-                    Assert.AreEqual(new TimeSpan(12, 12, 12), ((AseDataReader)reader).GetTimeSpan(0));
+                    
+                    if (typeof(T) == typeof(CoreFxConnectionProvider))
+                    {
+                        Assert.AreEqual(new TimeSpan(12, 12, 12), ((AseDataReader) reader).GetTimeSpan(0));
+                    }
                 }
             }
         }
@@ -104,12 +109,21 @@ namespace AdoNetCore.AseClient.Tests.Integration.Query
         public static IEnumerable<TestCaseData> TestParameter_Cases()
         {
             yield return new TestCaseData(null, null);
-            yield return new TestCaseData(new TimeSpan(12, 12, 12), new DateTime(1900, 01, 01, 12, 12, 12));
-            yield return new TestCaseData(new TimeSpan(0, 0, 0, 0, 0), new DateTime(1900, 01, 01, 0, 0, 0, 0));
-            yield return new TestCaseData(new TimeSpan(0, 23, 59, 59, 997), new DateTime(1900, 01, 01, 23, 59, 59, 997));
-            yield return new TestCaseData(new DateTime(1900, 01, 01, 12, 12, 12), new DateTime(1900, 01, 01, 12, 12, 12));
             yield return new TestCaseData(new DateTime(1900, 01, 01, 0, 0, 0, 0), new DateTime(1900, 01, 01, 0, 0, 0, 0));
-            yield return new TestCaseData(new DateTime(1900, 01, 01, 23, 59, 59, 997), new DateTime(1900, 01, 01, 23, 59, 59, 997));
+            yield return new TestCaseData(new DateTime(1900, 01, 01, 0, 44, 33, 876), new DateTime(1900, 01, 01, 0, 44, 33, 876));
+            yield return new TestCaseData(new DateTime(1900, 01, 01, 12, 12, 12), new DateTime(1900, 01, 01, 12, 12, 12));
+            yield return new TestCaseData(new DateTime(1900, 01, 01, 14, 44, 33, 233), new DateTime(1900, 01, 01, 14, 44, 33, 233));
+            yield return new TestCaseData(new DateTime(1900, 01, 01, 22, 44, 33, 0), new DateTime(1900, 01, 01, 22, 44, 33, 0));
+            yield return new TestCaseData(new DateTime(1900, 01, 01, 23, 59, 59, 996), new DateTime(1900, 01, 01, 23, 59, 59, 996));
+            yield return new TestCaseData(new DateTime(1900, 01, 01, 23, 59, 59, 997), new DateTime(1900, 01, 01, 23, 59, 59, 996));
+            yield return new TestCaseData(new DateTime(1900, 01, 01, 9, 44, 33, 886), new DateTime(1900, 01, 01, 9, 44, 33, 886));
+
+            if (typeof(T) == typeof(CoreFxConnectionProvider))
+            {
+                yield return new TestCaseData(new TimeSpan(0, 0, 0, 0, 0), new DateTime(1900, 01, 01, 0, 0, 0, 0));
+                yield return new TestCaseData(new TimeSpan(0, 23, 59, 59, 997), new DateTime(1900, 01, 01, 23, 59, 59, 996));
+                yield return new TestCaseData(new TimeSpan(12, 12, 12), new DateTime(1900, 01, 01, 12, 12, 12));
+            }
         }
     }
 }
