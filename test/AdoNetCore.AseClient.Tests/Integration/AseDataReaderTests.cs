@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using Dapper;
 using NUnit.Framework;
 
 namespace AdoNetCore.AseClient.Tests.Integration
@@ -77,6 +78,25 @@ namespace AdoNetCore.AseClient.Tests.Integration
     CAST(NULL AS TIME) AS [NULL_TIME]
 ";
 
+
+        [SetUp]
+        public void Setup()
+        {
+            using (var connection = new AseConnection(ConnectionStrings.Default))
+            {
+                connection.Execute("create table [dbo].[datareader_tests] (id int, value varchar(10))");
+            }
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            using (var connection = new AseConnection(ConnectionStrings.Default))
+            {
+                connection.Execute("drop table [dbo].[datareader_tests]");
+            }
+        }
+        
         [TestCase("INT")]
         [TestCase("BIGINT")]
         [TestCase("SMALLINT")]
@@ -998,6 +1018,43 @@ SELECT 5";
             yield return new TestCaseData("select convert(unsigned tinyint, null)", typeof(byte));
             yield return new TestCaseData("select convert(varbinary, null)", typeof(byte[]));
             yield return new TestCaseData("select convert(varchar, null)", typeof(string));
+        }
+
+        [TestCaseSource(nameof(ExecuteReader_SelectFromEmptyTable_Cases))]
+        public void ExecuteReader_SelectFromTable(string populationStatement)
+        {
+            if (!string.IsNullOrWhiteSpace(populationStatement))
+            {
+                using (var connection = new AseConnection(ConnectionStrings.Default))
+                {
+                    connection.Execute(populationStatement);
+                }
+            }
+
+            using (var connection = new AseConnection(ConnectionStrings.Default))
+            {
+                connection.Open();
+                
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "select id, value from [dbo].[datareader_tests]";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                        }
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<TestCaseData> ExecuteReader_SelectFromEmptyTable_Cases()
+        {
+            yield return new TestCaseData(null);
+            yield return new TestCaseData("insert into [dbo].[datareader_tests] (id, value) values (1, 'test')");
+            yield return new TestCaseData($"insert into [dbo].[datareader_tests] (id, value) values ({int.MaxValue}, 'test')");
+            yield return new TestCaseData($"insert into [dbo].[datareader_tests] (id, value) values ({int.MinValue}, 'test')");
+            yield return new TestCaseData("insert into [dbo].[datareader_tests] (id, value) select 1, 'test' union all select 2, 'aaa'");
         }
     }
 }
